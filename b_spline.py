@@ -9,7 +9,7 @@ def get_bspline_mtx(num_cp, num_pt, mesh=None, order=4):
     knots[num_cp+1:] = 1.0
 
     if numpy.any(mesh):
-        lins = mesh[1, :, 1]
+        lins = mesh[0, :, 1]
         t_vec = (lins - numpy.min(lins)) / (numpy.max(lins) - numpy.min(lins))
     else:
         t_vec = numpy.linspace(0, 1, num_pt)

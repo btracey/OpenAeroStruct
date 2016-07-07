@@ -25,10 +25,10 @@ except:
 mesh = gen_crm_mesh(n_points_inboard=6, n_points_outboard=9, num_x=2)
 
 num_x = 2
-num_y = 21
+num_y = 41
 span = 10.
-chord = 1.
-cosine_spacing = 1.
+chord = 5.
+cosine_spacing = .5
 mesh = gen_mesh(num_x, num_y, span, chord, cosine_spacing)
 num_twist = numpy.max([int((num_y - 1) / 5), 5])
 
@@ -36,12 +36,12 @@ aero_ind = numpy.atleast_2d(numpy.array([mesh.shape[0], mesh.shape[1]]))
 fem_ind = [mesh.shape[1]]
 aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
 
-r = radii(mesh)
+r = radii(mesh) / 5
 mesh = mesh.reshape(-1, mesh.shape[-1])
 
 num_y = fem_ind[0, 0]
 num_twist = 5
-t = r/10
+t = numpy.ones((num_y-1)) * 0.25
 
 # Define the material properties
 execfile('aluminum.py')
@@ -99,9 +99,12 @@ if SNOPT:
 
 prob.driver.add_desvar('t',
                        lower=numpy.ones((num_y-1)) * 0.003,
-                       upper=numpy.ones((num_y-1)) * 0.25)
-prob.driver.add_objective('energy')
-prob.driver.add_constraint('weight', upper=1e5)
+                       upper=numpy.ones((num_y-1)) * 0.25,
+                       scaler=1e4)
+# prob.driver.add_objective('energy')
+# prob.driver.add_constraint('weight', upper=1e5)
+prob.driver.add_objective('weight')
+prob.driver.add_constraint('failure', upper=0.0)
 
 prob.driver.add_recorder(SqliteRecorder('spatialbeam.db'))
 

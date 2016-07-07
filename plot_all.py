@@ -32,7 +32,6 @@ import matplotlib.animation as manimation
 import numpy
 import sqlitedict
 import aluminum
-from b_spline import get_bspline_mtx
 
 #####################
 # User-set parameters
@@ -142,12 +141,8 @@ class Display(object):
                 self.def_mesh.append(def_mesh)
                 nx, ny, n, n_bpts, n_panels, i, i_bpts, i_panels = self.aero_ind[0][0, :]
                 def_mesh = def_mesh[:n, :].reshape(nx, ny, 3)
-                h_cp = case_data['Unknowns']['twist']
-                num_twist = h_cp.shape[0]
-                jac = get_bspline_mtx(num_twist, ny, def_mesh)
-                h = jac.dot(h_cp)
 
-                self.twist.append(h)
+                self.twist.append(case_data['Unknowns']['twist'])
 
                 normals.append(case_data['Unknowns']['normals'])
                 widths.append(case_data['Unknowns']['widths'])

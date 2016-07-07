@@ -14,7 +14,7 @@ try:
     fortran_flag = True
 except:
     fortran_flag = False
-#fortran_flag = False
+fortran_flag = False
 
 def norm(vec):
     return numpy.sqrt(numpy.sum(vec**2))
@@ -278,6 +278,14 @@ class SpatialBeamFEM(Component):
         else:
             self.splu = scipy.sparse.linalg.splu(self.mtx)
             unknowns['disp_aug'] = self.splu.solve(self.rhs)
+            # self.splu = scipy.sparse.linalg.splu(self.mtx)
+            # matvec = lambda x: self.splu.solve(x)
+            # linop = scipy.sparse.linalg.LinearOperator((self.size, self.size), matvec)
+            # def cb(r): print ' '*4, numpy.linalg.norm(r)
+            # unknowns['disp_aug'] = scipy.sparse.linalg.gmres(self.mtx, self.rhs, M=linop,
+            #                     x0=unknowns['disp_aug'], tol=1e-15,
+            #                     callback=cb,
+            #                     )[0]
 
 
     def apply_nonlinear(self, params, unknowns, resids):
@@ -326,10 +334,9 @@ class SpatialBeamFEM(Component):
                 sol_vec[voi].vec[:] = lu_solve(self.lup, rhs_vec[voi].vec, trans=t)
             else:
                 if t == 0:
-                    sol_vec[voi].vec[:] = self.splu.solve(self.rhs)
+                    sol_vec[voi].vec[:] = self.splu.solve(rhs_vec[voi].vec)
                 elif t == 1:
-                    sol_vec[voi].vec[:] = self.spluT.solve(self.rhs.real)
-                    sol_vec[voi].vec.imag[:] = self.spluT.solve(self.rhs.complex)
+                    sol_vec[voi].vec[:] = self.spluT.solve(rhs_vec[voi].vec)
 
 
 

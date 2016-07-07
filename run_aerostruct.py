@@ -10,7 +10,7 @@ import sys
 from time import time
 
 from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, Newton, ScipyGMRES, LinearGaussSeidel, NLGaussSeidel, SqliteRecorder, profile
-from geometry import GeometryMesh, gen_crm_mesh, gen_mesh, get_mesh_data
+from geometry import GeometryMesh, gen_crm_mesh, gen_mesh, get_inds
 from transfer import TransferDisplacements, TransferLoads
 from weissinger import WeissingerStates, WeissingerFunctionals
 from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, radii
@@ -29,8 +29,10 @@ except:
 if 1:
     # Use the CRM mesh
     # Create the mesh with 2 inboard points and 3 outboard points
-    mesh = gen_crm_mesh(n_points_inboard=2, n_points_outboard=3)
+    mesh = gen_crm_mesh(n_points_inboard=4, n_points_outboard=6)
+    mesh = gen_crm_mesh(n_points_inboard=6, n_points_outboard=9)
     num_x, num_y, _ = mesh.shape
+
 else:
     # Use a rectangular wing mesh
     num_x = 2
@@ -49,7 +51,7 @@ mesh = mesh.reshape(-1, mesh.shape[-1])
 aero_ind = numpy.atleast_2d(numpy.array([num_x, num_y]))
 fem_ind = [n_fem]
 
-aero_ind, fem_ind = get_mesh_data(aero_ind, fem_ind)
+aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
 
 # Define the aircraft properties
 execfile('CRM.py')
@@ -93,7 +95,7 @@ coupled.add('loads',
             TransferLoads(aero_ind),
             promotes=['*'])
 coupled.add('spatialbeamstates',
-            SpatialBeamStates(aero_ind, E, G),
+            SpatialBeamStates(aero_ind, fem_ind, E, G),
             promotes=['*'])
 
 coupled.nl_solver = Newton()
@@ -111,9 +113,11 @@ coupled.nl_solver.options['rtol'] = 1e-12
 
 coupled.nl_solver = HybridGSNewton()   ### Uncomment this out to use Hybrid GS Newton
 coupled.nl_solver.nlgs.options['iprint'] = 1
-coupled.nl_solver.nlgs.options['maxiter'] = 5
-coupled.nl_solver.newton.options['atol'] = 1e-7
-coupled.nl_solver.newton.options['rtol'] = 1e-7
+coupled.nl_solver.nlgs.options['maxiter'] = 10
+coupled.nl_solver.nlgs.options['atol'] = 1e-10
+coupled.nl_solver.nlgs.options['rtol'] = 1e-12
+coupled.nl_solver.newton.options['atol'] = 1e-10
+coupled.nl_solver.newton.options['rtol'] = 1e-10
 coupled.nl_solver.newton.options['iprint'] = 1
 
 root.add('coupled',
@@ -152,7 +156,7 @@ prob.driver.add_desvar('twist',lower= -10.,
 #prob.driver.add_desvar('alpha', lower=-10., upper=10., scaler=1000)
 prob.driver.add_desvar('t',
                        lower= 0.001,
-                       upper= 0.25, scaler=1000)
+                       upper= 0.25, scaler=1e5)
 prob.driver.add_objective('fuelburn')
 prob.driver.add_constraint('failure', upper=0.0)
 prob.driver.add_constraint('eq_con', equals=0.0)
