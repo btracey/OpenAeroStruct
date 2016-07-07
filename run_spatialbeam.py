@@ -8,10 +8,11 @@ import sys
 from time import time
 
 from openmdao.api import IndepVarComp, Problem, Group, ScipyOptimizer, SqliteRecorder
-from geometry import GeometryMesh, gen_crm_mesh, get_inds, gen_mesh
+from geometry import GeometryMesh, Bspline, gen_crm_mesh, get_inds, gen_mesh
 from spatialbeam import SpatialBeamStates, SpatialBeamFunctionals, radii
 from materials import MaterialsTube
 from openmdao.devtools.partition_tree_n2 import view_tree
+from b_spline import get_bspline_mtx
 
 try:
     from openmdao.api import pyOptSparseDriver
@@ -25,10 +26,10 @@ except:
 mesh = gen_crm_mesh(n_points_inboard=6, n_points_outboard=9, num_x=2)
 
 num_x = 2
-num_y = 41
+num_y = 11
 span = 10.
 chord = 5.
-cosine_spacing = .5
+cosine_spacing = 0.5
 mesh = gen_mesh(num_x, num_y, span, chord, cosine_spacing)
 num_twist = numpy.max([int((num_y - 1) / 5), 5])
 
@@ -40,8 +41,9 @@ r = radii(mesh) / 5
 mesh = mesh.reshape(-1, mesh.shape[-1])
 
 num_y = fem_ind[0, 0]
-num_twist = 5
-t = numpy.ones((num_y-1)) * 0.25
+num_twist = 6
+num_thickness = num_twist
+t = numpy.ones((num_y-1)) * 0.15
 
 # Define the material properties
 execfile('aluminum.py')
@@ -55,8 +57,12 @@ span = 58.7630524 # [m] baseline CRM
 
 root = Group()
 
+jac_twist = get_bspline_mtx(num_twist, num_y)
+jac_thickness = get_bspline_mtx(num_thickness, num_y-1)
+
 des_vars = [
-    ('twist', numpy.zeros(num_twist)),
+    ('twist_cp', numpy.zeros(num_twist)),
+    ('thickness_cp', numpy.ones(num_thickness)*numpy.max(t)),
     ('dihedral', 0.),
     ('sweep', 0.),
     ('span', span),
@@ -71,8 +77,14 @@ des_vars = [
 root.add('des_vars',
          IndepVarComp(des_vars),
          promotes=['*'])
+root.add('twist_bsp',
+         Bspline('twist_cp', 'twist', jac_twist),
+         promotes=['*'])
+root.add('thickness_bsp',
+         Bspline('thickness_cp', 'thickness', jac_thickness),
+         promotes=['*'])
 root.add('mesh',
-         GeometryMesh(mesh, aero_ind, num_twist),
+         GeometryMesh(mesh, aero_ind),
          promotes=['*'])
 root.add('tube',
          MaterialsTube(aero_ind),
@@ -97,9 +109,9 @@ if SNOPT:
     prob.driver.opt_settings = {'Major optimality tolerance': 1.0e-8,
                                 'Major feasibility tolerance': 1.0e-8}
 
-prob.driver.add_desvar('t',
-                       lower=numpy.ones((num_y-1)) * 0.003,
-                       upper=numpy.ones((num_y-1)) * 0.25,
+prob.driver.add_desvar('thickness_cp',
+                       lower=numpy.ones((num_thickness)) * 0.003,
+                       upper=numpy.ones((num_thickness)) * 0.25,
                        scaler=1e4)
 # prob.driver.add_objective('energy')
 # prob.driver.add_constraint('weight', upper=1e5)

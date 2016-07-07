@@ -129,7 +129,7 @@ class Display(object):
 
             try:
                 self.r.append(case_data['Unknowns']['r'])
-                self.t.append(case_data['Unknowns']['t'])
+                self.t.append(case_data['Unknowns']['thickness'])
                 self.vonmises.append(
                     numpy.max(case_data['Unknowns']['vonmises'], axis=1))
                 self.show_tube = True

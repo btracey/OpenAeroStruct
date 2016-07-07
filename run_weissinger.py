@@ -50,7 +50,7 @@ if sys.argv[1].endswith('m'):
 
 else:
     num_x = 2
-    num_y = 81
+    num_y = 41
     span = 10.
     chord = 1.
     cosine_spacing = 1.
@@ -65,7 +65,7 @@ aero_ind, fem_ind = get_inds(aero_ind, fem_ind)
 
 root = Group()
 
-jac = get_bspline_mtx(num_twist, num_y, mesh[:num_x*num_y, :].reshape(num_x, num_y, 3))
+jac = get_bspline_mtx(num_twist, num_y)
 
 des_vars = [
     ('twist_cp', numpy.zeros(num_twist)),

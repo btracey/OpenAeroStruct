@@ -149,7 +149,7 @@ def taper(mesh, taper_ratio):
     span = le[-1, 1] - le[0, 1]
     taper = numpy.linspace(1, taper_ratio, ny2)[::-1]
 
-    jac = get_bspline_mtx(ny2, ny2, mesh, order=2)
+    jac = get_bspline_mtx(ny2, ny2, order=2)
     taper = jac.dot(taper)
 
     dx = numpy.hstack((taper, taper[::-1][1:]))

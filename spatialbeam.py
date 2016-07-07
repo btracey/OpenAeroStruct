@@ -14,7 +14,7 @@ try:
     fortran_flag = True
 except:
     fortran_flag = False
-fortran_flag = False
+# fortran_flag = False
 
 def norm(vec):
     return numpy.sqrt(numpy.sum(vec**2))
@@ -436,7 +436,6 @@ class SpatialBeamWeight(Component):
 
     def linearize(self, params, unknowns, resids):
         jac = self.alloc_jacobian()
-        jac['weight', 't'][0, :] = 1.0
         return jac
 
 
